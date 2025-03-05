@@ -1,4 +1,4 @@
-package weather_test
+package openmeteo_test
 
 import (
 	"fmt"
