@@ -11,10 +11,10 @@ import (
 
 func TestStuff(t *testing.T) {
 	t.Run("Test1", func(t *testing.T) {
-		api, err := weather.NewWeatherAPI(54.6167, 9.9167)
+		api, err := weather.NewWeatherAPI()
 		require.NoError(t, err)
 
-		weather, err := api.Current(t.Context())
+		weather, err := api.Current(t.Context(), 54.6167, 9.9167)
 		require.NoError(t, err)
 
 		fmt.Printf("Weather: %+v\n", weather)

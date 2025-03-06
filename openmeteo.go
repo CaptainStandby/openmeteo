@@ -36,15 +36,13 @@ var measurements = []string{
 }
 
 type WeatherAPI interface {
-	Current(ctx context.Context) (*CurrentWeather, error)
+	Current(ctx context.Context, latitude, longitude float64) (*CurrentWeather, error)
 }
 
 type weatherAPI struct {
-	latitude  float64
-	longitude float64
-	apiKey    string
-	baseUrl   string
-	client    *http.Client
+	apiKey  string
+	baseUrl string
+	client  *http.Client
 }
 
 var _ WeatherAPI = &weatherAPI{}
@@ -70,13 +68,6 @@ func WithApiKey(apiKey string) options {
 }
 
 func validate(api *weatherAPI) error {
-	if api.latitude < -90.0 || api.latitude > 90.0 {
-		return errors.New("Latitude must be between -90˚ and 90˚")
-	}
-	if api.longitude < -180.0 || api.longitude > 180.0 {
-		return errors.New("Longitude must be between -180˚ and 180˚")
-	}
-
 	u, err := url.ParseRequestURI(api.baseUrl)
 	if err != nil {
 		return err
@@ -92,20 +83,11 @@ func validate(api *weatherAPI) error {
 	return nil
 }
 
-func NewWeatherAPI(lat, lng float64, options ...options) (WeatherAPI, error) {
-	if lat < -90.0 || lat > 90.0 {
-		return nil, errors.New("Latitude must be between -90˚ and 90˚")
-	}
-	if lng < -180.0 || lng > 180.0 {
-		return nil, errors.New("Longitude must be between -180˚ and 180˚")
-	}
-
+func NewWeatherAPI(options ...options) (WeatherAPI, error) {
 	api := &weatherAPI{
-		latitude:  lat,
-		longitude: lng,
-		baseUrl:   defaultBaseUrl,
-		apiKey:    "",
-		client:    http.DefaultClient,
+		baseUrl: defaultBaseUrl,
+		apiKey:  "",
+		client:  http.DefaultClient,
 	}
 	for _, opt := range options {
 		opt(api)
@@ -173,7 +155,13 @@ func (api *weatherAPI) url() string {
 	return u.JoinPath(defaultBasePath).String()
 }
 
-func (api *weatherAPI) Current(ctx context.Context) (*CurrentWeather, error) {
+func (api *weatherAPI) Current(ctx context.Context, latitude, longitude float64) (*CurrentWeather, error) {
+	if latitude < -90.0 || latitude > 90.0 {
+		return nil, errors.New("Latitude must be between -90˚ and 90˚")
+	}
+	if longitude < -180.0 || longitude > 180.0 {
+		return nil, errors.New("Longitude must be between -180˚ and 180˚")
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, api.url(), nil)
 	if err != nil {
@@ -183,8 +171,8 @@ func (api *weatherAPI) Current(ctx context.Context) (*CurrentWeather, error) {
 	req.Header.Set("Accept", "application/json")
 
 	query := url.Values{}
-	query.Add("latitude", fmt.Sprintf("%f", api.latitude))
-	query.Add("longitude", fmt.Sprintf("%f", api.longitude))
+	query.Add("latitude", fmt.Sprintf("%f", latitude))
+	query.Add("longitude", fmt.Sprintf("%f", longitude))
 	for _, m := range measurements {
 		query.Add("current", m)
 	}
